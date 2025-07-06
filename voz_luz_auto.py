@@ -68,5 +68,5 @@ def habla():
         return jsonify({"error": f"Error interno: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    print("✨ Luz está escuchando en http://127.0.0.1:5000/habla")
-    app.run(host='0.0.0.0', port=5000, debug=True)  # debug=True para más detalles
+    print("✨ Luz está escuchando en http://0.0.0.0:5000/habla")
+    app.run(host='0.0.0.0', port=5000)
