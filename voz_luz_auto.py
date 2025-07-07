@@ -20,7 +20,7 @@ def habla():
             return jsonify({'error': 'Mensaje vacío'}), 400
 
         respuesta = requests.post(
-            'https://openrouter.ai/v1/chat/completions',
+            'https://openrouter.ai/api/v1/chat/completions',
             headers={
                 'Authorization': f'Bearer {OPENROUTER_API_KEY}',
                 'Content-Type': 'application/json'
