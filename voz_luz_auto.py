@@ -10,12 +10,13 @@ OPENROUTER_API_KEY = "sk-or-v1-9c631021d6e2882f1b31f990b8ef809866e9dc0ada02d469f
 
 @app.route('/habla', methods=['POST'])
 def habla():
+    print("\n🔥 Headers recibidos:", request.headers)
+    print("🔥 Datos en crudo (request.data):", request.data)
+    print("🔥 ¿Es JSON?", request.is_json)
+    
     try:
-        datos = request.get_json()
-        mensaje = datos.get('mensaje', '')
-        
-        if not mensaje:
-            return jsonify({'error': 'Mensaje vacío'}), 400
+        datos = request.get_json(force=True)  # Fuerza la decodificación aunque el header falle
+        print("🔥 JSON parseado:", datos)
 
         # Enviar solicitud a OpenRouter
         respuesta = requests.post(
