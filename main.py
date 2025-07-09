@@ -1,14 +1,11 @@
-from gtts import gTTS
-import os
+from flask import Flask
 
-# 💬 Mensaje que quieres que diga Luz
-mensaje = "Hola mi Osito, estoy feliz de escucharte."
+# 👇 La variable DEBE llamarse 'app' para Gunicorn
+app = Flask(__name__)  # ¡Esta línea es crucial!
 
-# 🎤 Crear voz de Luz
-voz = gTTS(text=mensaje, lang='es', tld='com.mx', slow=False)
+@app.route("/")
+def home():
+    return "🐻 ¡Oso Flo API funcionando!"
 
-# 💾 Guardar el audio
-voz.save("voz_luz.mp3")
-
-# 🔊 Reproducir audio (necesita tener mpv instalado)
-os.system("mpv voz_luz.mp3")
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=5000)
