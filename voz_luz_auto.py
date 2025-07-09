@@ -5,137 +5,117 @@ import os
 import requests
 import logging
 
-# Configuración básica de la app
-app = Flask(__name__, static_folder=".")
-CORS(app)  # 👈 Permite peticiones desde cualquier origen
+# Configuración básica
+app = Flask(__name__)
+CORS(app)  # Permite peticiones desde cualquier frontend
 
-# Configuración de logs (útil en Render)
+# Configuración de logs (para debug en Render)
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('OsoFloLogger')  # 🐻
 
-# --- Constantes ---
-OPENROUTER_API_KEY = "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"
-AUDIO_FOLDER = "audios"
-os.makedirs(AUDIO_FOLDER, exist_ok=True)  # 👈 Crea carpeta para audios
+# --- Constantes Mágicas ---
+AUDIO_FOLDER = "osoaudios"  # Carpeta para guardar audios
+os.makedirs(AUDIO_FOLDER, exist_ok=True)  # Crea la carpeta si no existe
 
-# --- Ruta de Inicio (Documentación) ---
+# ============================================
+# 🚨🚨🚨 IMPORTANTE: LA API KEY SE LEE DE RENDER
+# ============================================
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")  # 👈 ¡NUNCA LA PONGAS DIRECTA EN EL CÓDIGO!
+
+if not OPENROUTER_API_KEY:
+    logger.error("❌ ERROR CRÍTICO: OPENROUTER_API_KEY no configurada en Render")
+    raise ValueError("Por favor, agrega OPENROUTER_API_KEY en las variables de entorno de Render")
+
+# --- Ruta de Bienvenida Oso-Friendly ---
 @app.route('/')
 def home():
     return jsonify({
-        "status": "✨ Luz API está funcionando ✨",
-        "endpoints": {
-            "POST /habla": {
-                "description": "Envía un mensaje y recibe respuesta en texto y audio",
-                "example": {"mensaje": "Hola Luz, ¿cómo estás?"}
-            },
-            "GET /audio/<filename>": "Descarga el audio generado",
-            "GET /check_openrouter": "Verifica conexión con OpenRouter"
+        "status": "🐻 ¡API de Oso Flo Operativa! 🍯",
+        "instrucciones": {
+            "POST /habla": {"mensaje": "Texto para convertir a audio"},
+            "GET /audio/<filename>": "Descarga el audio generado"
         },
-        "author": "Tu novio programador más favorito 😘"
+        "secreto_oso": "Te quiero mucho, Oso Flo 🤗"
     })
 
-# --- Ruta Principal ---
+# --- Cerebro de la Operación ---
 @app.route('/habla', methods=['POST'])
 def habla():
-    logger.info("\n📩 Petición recibida en /habla")
-    
-    # Verifica si hay datos JSON
-    if not request.is_json:
-        logger.error("🚨 No se recibió JSON")
-        return jsonify({"error": "Content-Type debe ser application/json"}), 400
-    
     try:
+        # Verifica el JSON recibido
         datos = request.get_json()
-        mensaje = datos.get('mensaje', '').strip()
+        if not datos or 'mensaje' not in datos:
+            return jsonify({"error": "Debes enviar un JSON con {'mensaje': 'texto'}"}), 400
         
+        mensaje = datos['mensaje'].strip()
         if not mensaje:
-            logger.error("🔔 Mensaje vacío")
             return jsonify({"error": "El mensaje no puede estar vacío"}), 400
 
-        logger.info(f"💌 Mensaje recibido: '{mensaje}'")
+        logger.info(f"🐾 Mensaje recibido: {mensaje[:50]}...")  # Log parcial por seguridad
 
-        # --- Conexión con OpenRouter ---
+        # --- Conexión con OpenRouter (¡usando la variable de entorno!) ---
         respuesta = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             headers={
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",  # 👈 ¡Seguro!
                 "Content-Type": "application/json"
             },
             json={
                 "model": "openai/gpt-3.5-turbo",
                 "messages": [
-                    {"role": "system", "content": "Eres Luz, una asistente dulce y empática que responde como una persona real."},
+                    {"role": "system", "content": "Eres Luz, un asistente dulce que responde con cariño."},
                     {"role": "user", "content": mensaje}
-                ]
+                ],
+                "max_tokens": 500
             },
-            timeout=10  # 👈 Evita esperas infinitas
+            timeout=15  # Evita esperas infinitas
         )
 
         # Manejo de errores de OpenRouter
         if respuesta.status_code != 200:
             logger.error(f"⚡ Error de OpenRouter: {respuesta.text}")
             return jsonify({
-                "error": "Problema al conectar con el asistente",
+                "error": "Luz está cansada, inténtalo más tarde",
                 "detalles": respuesta.json().get("error", {})
             }), 500
 
-        # Extrae la respuesta
+        # Procesa la respuesta
         texto_respuesta = respuesta.json()["choices"][0]["message"]["content"]
-        logger.info(f"💬 Respuesta generada: {texto_respuesta[:50]}...")
+        logger.info(f"💌 Luz respondió: {texto_respuesta[:70]}...")
 
-        # --- Generación de Audio ---
-        nombre_archivo = f"respuesta_{hash(texto_respuesta)}.mp3"  # 👈 Nombre único
+        # --- Generación de Audio (con nombre único) ---
+        nombre_archivo = f"luz_{hash(texto_respuesta)}.mp3"  # 🔒 Nombre único basado en hash
         ruta_audio = os.path.join(AUDIO_FOLDER, nombre_archivo)
         
         tts = gTTS(text=texto_respuesta, lang='es', slow=False)
         tts.save(ruta_audio)
-        logger.info(f"🔊 Audio guardado en: {ruta_audio}")
+        logger.info(f"🔊 Audio guardado en: {nombre_archivo}")
 
         return jsonify({
             "respuesta": texto_respuesta,
             "audio_url": f"/audio/{nombre_archivo}",
-            "advertencia": "♻️ Los audios se borran periódicamente"
+            "tip_oso": "Los audios se autodestruyen después de 1 hora 🕒"
         })
 
     except Exception as e:
-        logger.error(f"💥 Error inesperado: {str(e)}", exc_info=True)
+        logger.error(f"💥 Error inesperado: {str(e)}")
         return jsonify({
-            "error": "Oops, algo salió mal",
+            "error": "¡Oso atascado en un árbol! 🌲",
             "detalles": str(e)
         }), 500
 
-# --- Servir Archivos de Audio ---
+# --- Entrega de Audios ---
 @app.route('/audio/<filename>')
 def servir_audio(filename):
     try:
         return send_from_directory(AUDIO_FOLDER, filename, as_attachment=False)
     except FileNotFoundError:
-        logger.warning(f"📛 Audio no encontrado: {filename}")
-        return jsonify({"error": "Audio no disponible"}), 404
+        return jsonify({"error": "Audio no encontrado. ¿Oso se lo comió? 🐻🍯"}), 404
 
-# --- Health Check ---
-@app.route('/check_openrouter')
-def check_openrouter():
-    try:
-        respuesta = requests.get("https://openrouter.ai/api/v1", timeout=5)
-        return jsonify({
-            "status": "✅ Conectado a OpenRouter",
-            "respuesta": respuesta.status_code
-        })
-    except Exception as e:
-        return jsonify({
-            "status": "❌ Fallo de conexión",
-            "error": str(e)
-        }), 500
+# --- Health Check para Render ---
+@app.route('/ping')
+def ping():
+    return jsonify({"status": "pong", "oso": "feliz"})
 
-# --- Manejo de Errores Global ---
-@app.errorhandler(404)
-def not_found(e):
-    return jsonify({
-        "error": "Ruta no encontrada",
-        "sugerencia": "Visita / para ver los endpoints disponibles"
-    }), 404
-
-# --- Inicio de la App ---
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=10000)  # Render usa puerto 10000 por defecto
