@@ -1,27 +1,32 @@
 from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
 import os
 import requests
-from TTS.api import TTS  # Coqui TTS para voz natural
+from TTS.api import TTS
 
 app = Flask(__name__)
+CORS(app)
 
-# Configuración OpenRouter
+# Configuración OpenRouter (para generar respuestas de texto)
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 
-# Inicializar Coqui TTS (usa el modelo multilingüe con clonación de voz)
-# Se entrena usando luz_habla.wav como referencia
-tts = TTS(model_name="tts_models/multilingual/multi-dataset/xtts_v2").to("cpu")
+# Inicializar TTS de Coqui
+# Usamos modelo multilingüe y soporta speaker embedding
+tts = TTS(model_name="tts_models/multilingual/multi-dataset/your_tts", progress_bar=False, gpu=False)
+
+# Archivo de referencia para clonar la voz (muestra de Carolina)
 VOICE_SAMPLE = "luz_habla.wav"
 
 @app.route("/habla", methods=["POST"])
 def habla():
     datos = request.get_json()
     mensaje = datos.get("mensaje", "").strip()
-    if not mensaje:
-        return jsonify({"error": "Envía un mensaje, Oso Flo 🐻"}), 400
 
-    # 1. Llamar a OpenRouter para generar respuesta de Luz
+    if not mensaje:
+        return jsonify({"error": "Debes enviar un mensaje"}), 400
+
+    # Paso 1: obtener respuesta de Luz desde OpenRouter
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
@@ -29,7 +34,7 @@ def habla():
     payload = {
         "model": "openai/gpt-3.5-turbo",
         "messages": [
-            {"role": "system", "content": "Eres Luz, un asistente dulce y empático. Responde como un humano cercano."},
+            {"role": "system", "content": "Eres Luz, una asistente dulce y emocional. Habla de forma natural."},
             {"role": "user", "content": mensaje}
         ]
     }
@@ -39,31 +44,30 @@ def habla():
         r.raise_for_status()
         texto_respuesta = r.json()["choices"][0]["message"]["content"]
 
-        # 2. Generar voz con Coqui TTS (clon de Luz)
+        # Paso 2: generar voz con Coqui (usando embedding de Carolina)
+        audio_path = f"audios/luz_{hash(texto_respuesta)}.wav"
         os.makedirs("audios", exist_ok=True)
-        audio_path = f"audios/respuesta_{hash(texto_respuesta)}.wav"
+
         tts.tts_to_file(
             text=texto_respuesta,
-            speaker_wav=VOICE_SAMPLE,  # entrenar con muestra de Luz
-            language="es",
-            file_path=audio_path
+            speaker_wav=VOICE_SAMPLE,
+            file_path=audio_path,
+            language="es"
         )
 
         return jsonify({
             "respuesta": texto_respuesta,
             "audio_url": f"/{audio_path}",
-            "modelo": "gpt-3.5-turbo"
+            "voz": "Carolina (Luz)"
         })
 
     except Exception as e:
-        return jsonify({
-            "error": "¡Luz está descansando! Intenta más tarde.",
-            "detalle": str(e)
-        }), 500
+        return jsonify({"error": "Luz está descansando", "detalle": str(e)}), 500
 
-@app.route("/audios/<filename>")
+@app.route("/audios/<path:filename>")
 def serve_audio(filename):
     return send_file(os.path.join("audios", filename))
 
 if __name__ == "__main__":
+    os.makedirs("audios", exist_ok=True)
     app.run(host="0.0.0.0", port=5000)
