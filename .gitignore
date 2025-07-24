@@ -1,4 +1,17 @@
-osoaudios/
+# Ignorar audios generados
+audios/
 *.mp3
-.env
-__pycache__
+*.wav
+
+# Ignorar entornos virtuales
+venv/
+.env/
+
+# Archivos temporales
+__pycache__/
+*.pyc
+*.pyo
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
