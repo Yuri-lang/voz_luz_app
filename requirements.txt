@@ -8,3 +8,5 @@ numpy==1.26.4
 scipy==1.11.4
 torch==2.0.1
 torchaudio==2.0.2
+TTS==0.15.6  
+gTTS==2.3.2  
