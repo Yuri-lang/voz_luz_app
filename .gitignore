@@ -1,17 +1,24 @@
-# Ignorar audios generados
-audios/
-*.mp3
-*.wav
-
-# Ignorar entornos virtuales
-venv/
-.env/
-
-# Archivos temporales
+# Python
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
+*.db
 
-# Archivos de sistema
+# Entornos virtuales
+venv/
+.env
+.venv
+
+# Audios y archivos generados
+audios/
+*.mp3
+*.wav
+*.mp4
+
+# Archivos del sistema
 .DS_Store
 Thumbs.db
+
+# Archivos de configuración local
+.env.local
