@@ -1,60 +1,48 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
-import requests
-from gtts import gTTS
+import tempfile
+from TTS.api import TTS
 
 app = Flask(__name__)
 CORS(app)
 
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+# Ruta a la voz de Luz (debe estar en el mismo directorio en Render)
+VOICE_SAMPLE = "Luz_habla.wav"
 
-AUDIO_FOLDER = "audios"
-os.makedirs(AUDIO_FOLDER, exist_ok=True)
+# Modelo de Coqui-TTS (multilingüe y soporta clonación de voz)
+tts = TTS(model_name="tts_models/multilingual/multi-dataset/your_tts", progress_bar=False, gpu=False)
 
-@app.route("/habla", methods=["POST"])
-def habla():
+@app.route("/hablar", methods=["POST"])
+def hablar():
     try:
-        data = request.get_json()
-        mensaje = data.get("mensaje", "").strip()
-        if not mensaje:
-            return jsonify({"error": "Debes enviar un mensaje"}), 400
+        data = request.json
+        texto = data.get("texto", "")
 
-        # 1. Obtener respuesta de OpenRouter
-        headers = {
-            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": "anthropic/claude-3-haiku",
-            "messages": [
-                {"role": "system", "content": "Eres Luz, dulce, emocional y hablas como Carolina. Usa un tono cariñoso y natural."},
-                {"role": "user", "content": mensaje}
-            ]
-        }
-        resp = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=20)
-        resp.raise_for_status()
-        texto_respuesta = resp.json()["choices"][0]["message"]["content"]
+        if not texto:
+            return jsonify({"error": "Texto vacío"}), 400
 
-        # 2. Generar audio con gTTS
-        filename = f"luz_{abs(hash(texto_respuesta))}.mp3"
-        filepath = os.path.join(AUDIO_FOLDER, filename)
-        if not os.path.exists(filepath):
-            tts = gTTS(text=texto_respuesta, lang='es', tld='com.mx', slow=False)
-            tts.save(filepath)
+        # Crear archivo temporal para guardar la voz generada
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
+            salida = temp_audio.name
 
-        return jsonify({
-            "respuesta": texto_respuesta,
-            "audio_url": f"/audio/{filename}"
-        })
+        # Generar voz clonada de Luz
+        tts.tts_to_file(
+            text=texto,
+            speaker_wav=VOICE_SAMPLE,
+            language="es",
+            file_path=salida
+        )
+
+        # Devolver el archivo de audio
+        return send_file(salida, mimetype="audio/wav")
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/audio/<filename>")
-def audio(filename):
-    return send_from_directory(AUDIO_FOLDER, filename)
+@app.route("/")
+def home():
+    return "Luz está lista y hablando con emociones ✨"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
