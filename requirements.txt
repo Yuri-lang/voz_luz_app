@@ -1,7 +1,8 @@
-flask
-flask_cors
-gtts
-coqui-tts
-soundfile
-numpy
-torch
+Flask==2.3.2
+Flask-Cors==4.0.0
+gunicorn==21.2.0
+coqui-tts==0.25.3
+numpy==1.26.4
+soundfile==0.12.1
+torch==2.1.0
+torchaudio==2.1.0
