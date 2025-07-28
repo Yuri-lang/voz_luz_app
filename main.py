@@ -1,48 +1,25 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
-import os
-import tempfile
 from TTS.api import TTS
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-# Ruta a la voz de Luz (debe estar en el mismo directorio en Render)
-VOICE_SAMPLE = "Luz_habla.wav"
-
-# Modelo de Coqui-TTS (multilingüe y soporta clonación de voz)
+# Cargamos modelo de Coqui (voz femenina multilingüe)
 tts = TTS(model_name="tts_models/multilingual/multi-dataset/your_tts", progress_bar=False, gpu=False)
 
 @app.route("/hablar", methods=["POST"])
 def hablar():
-    try:
-        data = request.json
-        texto = data.get("texto", "")
+    data = request.json
+    texto = data.get("texto", "Hola, soy Luz. Estoy lista para hablar contigo.")
 
-        if not texto:
-            return jsonify({"error": "Texto vacío"}), 400
+    salida = "voz_luz.wav"
+    # Generar voz
+    tts.tts_to_file(text=texto, file_path=salida, speaker_wav=None, language="es")
 
-        # Crear archivo temporal para guardar la voz generada
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_audio:
-            salida = temp_audio.name
-
-        # Generar voz clonada de Luz
-        tts.tts_to_file(
-            text=texto,
-            speaker_wav=VOICE_SAMPLE,
-            language="es",
-            file_path=salida
-        )
-
-        # Devolver el archivo de audio
-        return send_file(salida, mimetype="audio/wav")
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return send_file(salida, mimetype="audio/wav")
 
 @app.route("/")
-def home():
-    return "Luz está lista y hablando con emociones ✨"
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+def index():
+    return jsonify({"status": "Luz está activa y lista para hablar"})
