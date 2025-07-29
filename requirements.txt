@@ -1,9 +1,0 @@
-gradio==4.36.1
-TTS==0.22.0
-torch>=2.1.0
-torchaudio
-opencv-python
-gfpgan
-ffmpeg-python
-face-alignment
-numpy
