@@ -1,7 +1,7 @@
 from TTS.api import TTS
 import os
 
-# Cargar el modelo de voz multilingüe (YourTTS)
+# Cargar modelo de voz multilingüe (YourTTS)
 tts = TTS(model_name="tts_models/multilingual/multi-dataset/your_tts", progress_bar=False, gpu=False)
 
 def hablar(texto, archivo_salida="Luz_habla.wav"):
