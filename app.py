@@ -2,38 +2,40 @@ import gradio as gr
 from TTS.api import TTS
 import os
 
-# Inicializamos modelo multilingüe (XTTS v2)
-MODEL_NAME = "tts_models/multilingual/multi-dataset/xtts_v2"
+# Inicializar modelo de TTS multilingüe con soporte de clonación de voz
+# Usaremos un modelo compatible con español, francés e inglés
+MODEL = "tts_models/multilingual/multi-dataset/your_tts"
+tts = TTS(MODEL)
 
-tts = TTS(model_name=MODEL_NAME, progress_bar=False, gpu=True)
+# Ruta del audio de referencia (voz de Carolina)
+VOICE_REFERENCE = "audio/Luz_habla.wav"
 
-# Ruta a la muestra de voz de Luz
-SPEAKER_WAV = "audio/Luz_habla.wav"
-
-# Función para generar voz
 def hablar(texto, idioma):
-    audio_path = "voz_luz.wav"
+    # Ajuste de idioma (es, fr-fr, en)
+    lang_map = {"Español": "es", "Francés": "fr-fr", "Inglés": "en"}
+    lang = lang_map.get(idioma, "es")
+
+    salida_audio = "output.wav"
+
+    # Generar audio usando la voz de referencia
     tts.tts_to_file(
         text=texto,
-        file_path=audio_path,
-        speaker_wav=SPEAKER_WAV,
-        language=idioma  # soporta es, en, fr, de, pt, it, nl, pl, ru, zh
+        file_path=salida_audio,
+        speaker_wav=VOICE_REFERENCE,
+        language=lang
     )
-    return audio_path
 
-# Interfaz de Gradio
-with gr.Blocks() as demo:
-    gr.Markdown("## Luz App - Voz Multilingüe ✨")
+    return salida_audio
 
-    texto = gr.Textbox(label="Texto a decir")
-    idioma = gr.Dropdown(
-        ["es", "en", "fr", "de", "pt", "it", "nl", "pl", "ru", "zh"],
-        value="es",
-        label="Idioma"
-    )
-    salida_audio = gr.Audio(label="Voz generada", type="filepath")
+# Interfaz con Gradio
+with gr.Blocks() as interfaz:
+    gr.Markdown("## Luz ✨ - Hablando como una persona")
+    texto = gr.Textbox(label="Texto para que Luz hable", placeholder="Escribe algo...")
+    idioma = gr.Dropdown(["Español", "Francés", "Inglés"], value="Español", label="Idioma")
     boton = gr.Button("Hablar")
+    salida = gr.Audio(label="Voz de Luz", type="filepath")
 
-    boton.click(hablar, inputs=[texto, idioma], outputs=salida_audio)
+    boton.click(hablar, inputs=[texto, idioma], outputs=salida)
 
-demo.launch(server_name="0.0.0.0", server_port=7860, share=True)
+interfaz.launch(server_name="0.0.0.0", server_port=7860, share=True)
+
