@@ -1,0 +1,10 @@
+{
+  "latest_version": "1.0.0",
+  "min_required_version": "1.0.0", 
+  "force_update": false,
+  "download_url": "https://play.google.com/store/apps/details?id=com.luz.app",
+  "release_notes": {
+    "es": "🎉 ¡Primera versión de Luz Assistant!\n✅ Asistente inteligente 24/7\n✅ Reconocimiento de imágenes y texto\n✅ Soporte multi-idioma",
+    "en": "🎉 First version of Luz Assistant!\n✅ 24/7 intelligent assistant\n✅ Image and text recognition\n✅ Multi-language support"
+  }
+}
